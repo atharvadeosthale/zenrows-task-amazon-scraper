@@ -1,6 +1,11 @@
 const fs = require("fs");
 
 async function writeToFile(fileName, content) {
+  // Check if `outputs` directory exists, if not create one
+  if (!fs.existsSync("outputs")) {
+    fs.mkdirSync("outputs");
+  }
+
   // Output the HTML to a file
   await fs.writeFile(fileName, content, (err) => {
     if (err) throw new Error("Error writing to file", err);

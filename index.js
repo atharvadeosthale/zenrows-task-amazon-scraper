@@ -46,6 +46,9 @@ async function main() {
 
   await page.waitForNavigation({ waitUntil: "domcontentloaded" });
 
+  // Wait for review nodes (sometimes stuck in extra authentication so wait while approved in app)
+  await page.waitForSelector('div[data-hook="review"]');
+
   // Back at product page, get the rendered HTML
   const authenticatedHTML = await page.evaluate(
     () => document.documentElement.outerHTML

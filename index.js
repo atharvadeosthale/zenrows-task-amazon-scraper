@@ -10,6 +10,7 @@ dotenv.config();
 const config = {
   url: "https://www.amazon.com/ENHANCE-Headphone-Customizable-Lighting-Flexible/dp/B07DR59JLP/",
   headlessMode: false,
+  authenticateUser: true,
   email: process.env.AMAZON_EMAIL,
   password: process.env.AMAZON_PASSWORD,
 };
@@ -30,34 +31,37 @@ async function main() {
   await writeToFile("outputs/publicPage.html", publicHTML);
   console.log("✅ Public product page written to outputs/publicPage.html!");
 
-  // Go to login page, get the URL so you can check DOM content loaded
-  const signInUrl = await page.$eval(
-    'a[data-nav-role="signin"]',
-    (tag) => tag.href
-  );
-  await page.goto(signInUrl, { waitUntil: "domcontentloaded" });
+  // Only authenticate user if configuration is set
+  if (config.authenticateUser) {
+    // Go to login page, get the URL so you can check DOM content loaded
+    const signInUrl = await page.$eval(
+      'a[data-nav-role="signin"]',
+      (tag) => tag.href
+    );
+    await page.goto(signInUrl, { waitUntil: "domcontentloaded" });
 
-  // Type in email and password
-  await page.type("input[type=email]", config.email);
-  await page.click("#continue");
-  await page.waitForNavigation({ waitUntil: "domcontentloaded" });
-  await page.type("input[type=password]", config.password);
-  await page.click("#signInSubmit");
+    // Type in email and password
+    await page.type("input[type=email]", config.email);
+    await page.click("#continue");
+    await page.waitForNavigation({ waitUntil: "domcontentloaded" });
+    await page.type("input[type=password]", config.password);
+    await page.click("#signInSubmit");
 
-  await page.waitForNavigation({ waitUntil: "domcontentloaded" });
+    await page.waitForNavigation({ waitUntil: "domcontentloaded" });
 
-  // Wait for review nodes (sometimes stuck in extra authentication so wait while approved in app)
-  await page.waitForSelector('div[data-hook="review"]');
+    // Wait for review nodes (sometimes stuck in extra authentication so wait while approved in app)
+    await page.waitForSelector('div[data-hook="review"]');
 
-  // Back at product page, get the rendered HTML
-  const authenticatedHTML = await page.evaluate(
-    () => document.documentElement.outerHTML
-  );
+    // Back at product page, get the rendered HTML
+    const authenticatedHTML = await page.evaluate(
+      () => document.documentElement.outerHTML
+    );
 
-  await writeToFile("outputs/authenticatedPage.html", authenticatedHTML);
-  console.log(
-    "✅ Authenticated product page written to outputs/authenticatedPage.html!"
-  );
+    await writeToFile("outputs/authenticatedPage.html", authenticatedHTML);
+    console.log(
+      "✅ Authenticated product page written to outputs/authenticatedPage.html!"
+    );
+  }
 
   // Get the review nodes
   const reviewNodes = await page.$$('div[data-hook="review"]');

@@ -1,7 +1,8 @@
 const puppeteer = require("puppeteer");
 const fs = require("fs");
-const { writeToFile } = require("./helpers");
+const { writeToFile, parseReviewsFromNodes } = require("./helpers");
 const dotenv = require("dotenv");
+const converter = require("json-2-csv");
 
 dotenv.config();
 
@@ -30,9 +31,10 @@ async function main() {
   console.log("✅ Public product page written to outputs/publicPage.html!");
 
   // Go to login page, get the URL so you can check DOM content loaded
-  const signInUrl = await (
-    await page.$('a[data-nav-role="signin"]')
-  ).evaluate((tag) => tag.href);
+  const signInUrl = await page.$eval(
+    'a[data-nav-role="signin"]',
+    (tag) => tag.href
+  );
   await page.goto(signInUrl, { waitUntil: "domcontentloaded" });
 
   // Type in email and password
@@ -53,6 +55,17 @@ async function main() {
   console.log(
     "✅ Authenticated product page written to outputs/authenticatedPage.html!"
   );
+
+  // Get the review nodes
+  const reviewNodes = await page.$$('div[data-hook="review"]');
+
+  // Parse review nodes
+  const reviews = await parseReviewsFromNodes(reviewNodes);
+
+  // Convert reviews to CSV
+  const csv = await converter.json2csv(reviews);
+  await writeToFile("outputs/reviews.csv", csv);
+  console.log("✅ Reviews written to outputs/reviews.csv!");
 
   await browser.close();
 }
